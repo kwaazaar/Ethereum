@@ -1,4 +1,5 @@
-﻿using Nethereum.Hex.HexTypes;
+﻿using Nethereum.ABI.FunctionEncoding.Attributes;
+using Nethereum.Hex.HexTypes;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Web3;
 using System;
@@ -36,10 +37,15 @@ namespace NethereumDemo
             var contractAddress = receipt.ContractAddress;
 
             var contract = web3.Eth.GetContract(abi, contractAddress);
+            //var ctor = contract.
             var func = contract.GetFunction("greet");
+            
 
             // Local dry run
             var funcResult = func.CallAsync<string>().GetAwaiter().GetResult();
+
+            var evtGreeted = contract.GetEvent("Greeted");
+            var evtSenderFilterId = evtGreeted.CreateFilterAsync().GetAwaiter().GetResult(); // filterTopic1: new object[1] { null }, filterTopic2: new object[1] { senderAddress }).GetAwaiter().GetResult();
 
             var funcTranHash = func.SendTransactionAsync(senderAddress).GetAwaiter().GetResult();
 
@@ -51,9 +57,21 @@ namespace NethereumDemo
                     Thread.Sleep(1000);
             }
 
+            var evtResult = evtGreeted.GetFilterChanges<GreetedResult>(evtSenderFilterId).GetAwaiter().GetResult();
+
             //Console.WriteLine("FuncResult: " + receip);
 
 
+        }
+
+        public class GreetedResult
+        {
+            [Parameter("string", "name", 1, true)]
+            public string Name { get; set; }
+            [Parameter("address", "sender", 2, true)]
+            public string Sender { get; set; }
+            [Parameter("string", "result", 3, false)]
+            public string Result { get; set; }
         }
     }
 }
